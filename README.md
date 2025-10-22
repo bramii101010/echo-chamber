@@ -12,7 +12,7 @@ Welcome to Echo Chamber! This is a seamless audio looping web app with atmospher
 ## 🚀 Getting Started
 
 ### View the Live App
-The app is hosted at: `https://yourusername.github.io/echo-chamber/`
+The app is hosted at: `https://bramii101010.github.io/echo-chamber/`
 
 ### Run Locally
 1. Clone this repository
