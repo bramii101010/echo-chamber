@@ -158,6 +158,17 @@
             color: white;
         }
 
+        .toggle-btn {
+            padding: 5px 15px !important;
+            font-size: 0.8em !important;
+            margin-left: 10px;
+        }
+
+        .toggle-btn.on {
+            background: #667eea !important;
+            color: white !important;
+        }
+
         .effects-panel {
             margin: 30px 0;
             padding: 20px;
@@ -311,9 +322,12 @@
             </div>
 
             <div class="effect-control">
-                <label>Delay</label>
+                <label>
+                    Delay (Echo)
+                    <button id="delayToggle" class="toggle-btn" style="margin-left: 10px; padding: 5px 15px; font-size: 0.8em;">OFF</button>
+                </label>
                 <div class="slider-container">
-                    <input type="range" id="delaySlider" min="0" max="100" value="0">
+                    <input type="range" id="delaySlider" min="0" max="100" value="0" disabled>
                     <span class="value-display" id="delayValue">0%</span>
                 </div>
             </div>
@@ -376,6 +390,10 @@
         const reverbSlider = document.getElementById('reverbSlider');
         const delaySlider = document.getElementById('delaySlider');
         const fadeSlider = document.getElementById('fadeSlider');
+        const delayToggle = document.getElementById('delayToggle');
+
+        // Delay state
+        let delayEnabled = false;
 
         // Initialize audio context
         function initAudioContext() {
@@ -484,7 +502,7 @@
             
             dryGain.gain.value = 1;
             wetGain.gain.value = reverbSlider.value / 100;
-            delayWetGain.gain.value = delaySlider.value / 100;
+            delayWetGain.gain.value = delayEnabled ? (delaySlider.value / 100) : 0;
             
             // Dry signal
             sourceNode.connect(dryGain);
@@ -495,10 +513,12 @@
             reverbNode.connect(wetGain);
             wetGain.connect(gainNode);
             
-            // Delay signal
-            sourceNode.connect(delayNode);
-            delayNode.connect(delayWetGain);
-            delayWetGain.connect(gainNode);
+            // Delay signal (only if enabled)
+            if (delayEnabled) {
+                sourceNode.connect(delayNode);
+                delayNode.connect(delayWetGain);
+                delayWetGain.connect(gainNode);
+            }
             
             // Connect to analyser and destination
             gainNode.connect(analyser);
@@ -566,8 +586,28 @@
         delaySlider.addEventListener('input', (e) => {
             const value = e.target.value;
             document.getElementById('delayValue').textContent = value + '%';
-            if (delayFeedback) {
+            if (delayFeedback && delayEnabled) {
                 delayFeedback.gain.value = value / 200; // Lower feedback to prevent runaway
+            }
+        });
+
+        // Delay toggle
+        delayToggle.addEventListener('click', () => {
+            delayEnabled = !delayEnabled;
+            if (delayEnabled) {
+                delayToggle.textContent = 'ON';
+                delayToggle.classList.add('on');
+                delaySlider.disabled = false;
+                if (delayFeedback) {
+                    delayFeedback.gain.value = delaySlider.value / 200;
+                }
+            } else {
+                delayToggle.textContent = 'OFF';
+                delayToggle.classList.remove('on');
+                delaySlider.disabled = true;
+                if (delayFeedback) {
+                    delayFeedback.gain.value = 0; // Completely disable delay
+                }
             }
         });
 
