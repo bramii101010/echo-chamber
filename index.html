@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Chamber - Atmospheric Audio Looper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            width: 90%;
+            padding: 40px;
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #667eea;
+            font-size: 0.9em;
+        }
+
+        canvas {
+            width: 100%;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 12px 30px;
+            border: 2px solid #667eea;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .effects-panel {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .effect-control {
+            margin: 20px 0;
+        }
+
+        .effect-control label {
+            display: block;
+            margin-bottom: 8px;
+            color: #888;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #764ba2;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            min-width: 50px;
+            text-align: right;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .status.playing {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .status.stopped {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            color: #666;
+            font-size: 0.8em;
+            z-index: 1;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="container">
+        <h1>Echo Chamber</h1>
+        <p class="subtitle">Seamless Audio Looper</p>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <label for="audioFile" class="upload-btn">Choose Audio File</label>
+                <input type="file" id="audioFile" accept="audio/*">
+            </div>
+            <div class="file-name" id="fileName"></div>
+        </div>
+
+        <canvas id="visualizer"></canvas>
+
+        <div class="controls">
+            <button id="playBtn" disabled>Play</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <div class="effects-panel">
+            <div class="effect-control">
+                <label>Volume</label>
+                <div class="slider-container">
+                    <input type="range" id="volumeSlider" min="0" max="100" value="80">
+                    <span class="value-display" id="volumeValue">80%</span>
+                </div>
+            </div>
+
+            <div class="effect-control">
+                <label>Reverb</label>
+                <div class="slider-container">
+                    <input type="range" id="reverbSlider" min="0" max="100" value="30">
+                    <span class="value-display" id="reverbValue">30%</span>
+                </div>
+            </div>
+
+            <div class="effect-control">
+                <label>Delay</label>
+                <div class="slider-container">
+                    <input type="range" id="delaySlider" min="0" max="100" value="0">
+                    <span class="value-display" id="delayValue">0%</span>
+                </div>
+            </div>
+
+            <div class="effect-control">
+                <label>Fade Duration (seconds)</label>
+                <div class="slider-container">
+                    <input type="range" id="fadeSlider" min="0" max="5" step="0.1" value="0.5">
+                    <span class="value-display" id="fadeValue">0.5s</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="status stopped" id="status">Ready to play</div>
+    </div>
+
+    <div class="footer">Echo Chamber v1.0</div>
+
+    <script>
+        // Create stars background
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Audio context and nodes
+        let audioContext;
+        let sourceNode;
+        let gainNode;
+        let reverbNode;
+        let delayNode;
+        let delayFeedback;
+        let analyser;
+        let audioBuffer;
+        let isPlaying = false;
+        let startTime = 0;
+        let pauseTime = 0;
+
+        // Canvas for visualization
+        const canvas = document.getElementById('visualizer');
+        const canvasContext = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = 150;
+
+        // UI elements
+        const fileInput = document.getElementById('audioFile');
+        const fileName = document.getElementById('fileName');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+
+        // Sliders
+        const volumeSlider = document.getElementById('volumeSlider');
+        const reverbSlider = document.getElementById('reverbSlider');
+        const delaySlider = document.getElementById('delaySlider');
+        const fadeSlider = document.getElementById('fadeSlider');
+
+        // Initialize audio context
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create nodes
+                gainNode = audioContext.createGain();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                
+                // Create reverb (convolver)
+                reverbNode = audioContext.createConvolver();
+                createReverbImpulse();
+                
+                // Create delay
+                delayNode = audioContext.createDelay(5.0);
+                delayFeedback = audioContext.createGain();
+                
+                // Connect delay feedback loop
+                delayNode.connect(delayFeedback);
+                delayFeedback.connect(delayNode);
+                
+                // Set initial values
+                gainNode.gain.value = volumeSlider.value / 100;
+                delayNode.delayTime.value = 0.3;
+                delayFeedback.gain.value = 0;
+            }
+        }
+
+        // Create reverb impulse response
+        function createReverbImpulse() {
+            const rate = audioContext.sampleRate;
+            const length = rate * 3;
+            const impulse = audioContext.createBuffer(2, length, rate);
+            const impulseL = impulse.getChannelData(0);
+            const impulseR = impulse.getChannelData(1);
+            
+            for (let i = 0; i < length; i++) {
+                const n = i / rate;
+                impulseL[i] = (Math.random() * 2 - 1) * Math.exp(-n * 3);
+                impulseR[i] = (Math.random() * 2 - 1) * Math.exp(-n * 3);
+            }
+            
+            reverbNode.buffer = impulse;
+        }
+
+        // File upload handler
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = `Loaded: ${file.name}`;
+                initAudioContext();
+                
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                playBtn.disabled = false;
+                stopBtn.disabled = false;
+                updateStatus('Ready to play', false);
+            }
+        });
+
+        // Play button
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                play();
+            }
+        });
+
+        // Pause button
+        pauseBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                pause();
+            }
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', () => {
+            stop();
+        });
+
+        // Play function with seamless looping
+        function play() {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            // Stop any existing source
+            if (sourceNode) {
+                sourceNode.stop();
+            }
+
+            // Create new source
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.loop = true; // Enable seamless looping
+            
+            // Calculate offset for resume
+            const offset = pauseTime % audioBuffer.duration;
+            
+            // Connect audio graph with effects
+            const dryGain = audioContext.createGain();
+            const wetGain = audioContext.createGain();
+            const delayWetGain = audioContext.createGain();
+            
+            dryGain.gain.value = 1;
+            wetGain.gain.value = reverbSlider.value / 100;
+            delayWetGain.gain.value = delaySlider.value / 100;
+            
+            // Dry signal
+            sourceNode.connect(dryGain);
+            dryGain.connect(gainNode);
+            
+            // Wet signal (reverb)
+            sourceNode.connect(reverbNode);
+            reverbNode.connect(wetGain);
+            wetGain.connect(gainNode);
+            
+            // Delay signal
+            sourceNode.connect(delayNode);
+            delayNode.connect(delayWetGain);
+            delayWetGain.connect(gainNode);
+            
+            // Connect to analyser and destination
+            gainNode.connect(analyser);
+            gainNode.connect(audioContext.destination);
+
+            // Start playback
+            startTime = audioContext.currentTime - offset;
+            sourceNode.start(0, offset);
+            
+            isPlaying = true;
+            playBtn.classList.add('active');
+            pauseBtn.disabled = false;
+            updateStatus('Playing...', true);
+            visualize();
+        }
+
+        // Pause function
+        function pause() {
+            if (sourceNode) {
+                pauseTime = audioContext.currentTime - startTime;
+                sourceNode.stop();
+                isPlaying = false;
+                playBtn.classList.remove('active');
+                pauseBtn.disabled = true;
+                updateStatus('Paused', false);
+            }
+        }
+
+        // Stop function
+        function stop() {
+            if (sourceNode) {
+                sourceNode.stop();
+                isPlaying = false;
+                pauseTime = 0;
+                playBtn.classList.remove('active');
+                pauseBtn.disabled = true;
+                updateStatus('Stopped', false);
+                
+                // Clear canvas
+                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Volume control
+        volumeSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('volumeValue').textContent = value + '%';
+            if (gainNode) {
+                const fadeTime = parseFloat(fadeSlider.value);
+                gainNode.gain.linearRampToValueAtTime(
+                    value / 100,
+                    audioContext.currentTime + fadeTime
+                );
+            }
+        });
+
+        // Reverb control
+        reverbSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('reverbValue').textContent = value + '%';
+            // This will take effect on next play
+        });
+
+        // Delay control
+        delaySlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('delayValue').textContent = value + '%';
+            if (delayFeedback) {
+                delayFeedback.gain.value = value / 200; // Lower feedback to prevent runaway
+            }
+        });
+
+        // Fade control
+        fadeSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            document.getElementById('fadeValue').textContent = value + 's';
+        });
+
+        // Visualization
+        function visualize() {
+            if (!isPlaying) return;
+
+            requestAnimationFrame(visualize);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            canvasContext.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
+
+                const gradient = canvasContext.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+                gradient.addColorStop(0, '#764ba2');
+                gradient.addColorStop(1, '#667eea');
+
+                canvasContext.fillStyle = gradient;
+                canvasContext.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+
+        // Update status
+        function updateStatus(text, playing) {
+            status.textContent = text;
+            status.className = playing ? 'status playing' : 'status stopped';
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = canvas.offsetWidth;
+        });
+    </script>
+</body>
+</html>
