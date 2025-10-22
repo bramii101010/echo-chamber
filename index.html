@@ -419,7 +419,7 @@
                 
                 // Set initial values
                 gainNode.gain.value = volumeSlider.value / 100;
-                delayNode.delayTime.value = 0.3;
+                delayNode.delayTime.value = 0.4; // Increased from 0.3 to 0.4 seconds for clearer echo
                 delayFeedback.gain.value = 0;
             }
         }
@@ -502,7 +502,7 @@
             
             dryGain.gain.value = 1;
             wetGain.gain.value = reverbSlider.value / 100;
-            delayWetGain.gain.value = delayEnabled ? (delaySlider.value / 100) : 0;
+            delayWetGain.gain.value = delayEnabled ? (delaySlider.value / 300) : 0; // Reduced from /100 to /300
             
             // Dry signal
             sourceNode.connect(dryGain);
@@ -587,7 +587,7 @@
             const value = e.target.value;
             document.getElementById('delayValue').textContent = value + '%';
             if (delayFeedback && delayEnabled) {
-                delayFeedback.gain.value = value / 200; // Lower feedback to prevent runaway
+                delayFeedback.gain.value = value / 300; // Reduced for more subtle effect
             }
         });
 
@@ -599,7 +599,7 @@
                 delayToggle.classList.add('on');
                 delaySlider.disabled = false;
                 if (delayFeedback) {
-                    delayFeedback.gain.value = delaySlider.value / 200;
+                    delayFeedback.gain.value = delaySlider.value / 300; // More subtle
                 }
             } else {
                 delayToggle.textContent = 'OFF';
